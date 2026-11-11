@@ -1,0 +1,15 @@
+[Unit]
+Description=Local MQTT broker for Coral OLED messages
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+User=mendel
+Group=mendel
+ExecStart=/usr/sbin/mosquitto -c /home/mendel/coral-esp32-display/sub/services/mosquitto.conf
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

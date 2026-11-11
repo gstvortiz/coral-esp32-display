@@ -1,0 +1,20 @@
+[Unit]
+Description=Forward MQTT messages to the ESP32 OLED
+Wants=coral-display-broker.service
+After=coral-display-broker.service
+StartLimitIntervalSec=0
+
+[Service]
+User=mendel
+Group=mendel
+SupplementaryGroups=dialout
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/home/mendel/coral-esp32-display
+ExecStart=/usr/bin/python3 -m sub
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
