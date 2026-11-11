@@ -9,7 +9,7 @@ import uuid
 
 import paho.mqtt.client as mqtt
 
-from .messages import COMMAND_TOPIC, STATE_TOPIC, display_text
+from .messages import COMMAND_TOPIC, STATE_TOPIC, display_text, region_messages
 
 
 def exchange(command=None, host=None, port=1883, timeout=15):
@@ -71,22 +71,39 @@ def publish(text, host=None, port=1883, timeout=15):
     return exchange({'cmd': 'text', 'text': text}, host, port, timeout)
 
 
+def publish_regions(blue, yellow, host=None, port=1883, timeout=15):
+    return exchange(dict(region_messages(blue, yellow), cmd='regions'), host, port, timeout)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Publicar mensagem para o servico OLED da Coral.')
     parser.add_argument('text', nargs='*', help='Mensagem, ou - para ler stdin.')
     parser.add_argument('--host', help='Broker MQTT; padrao 127.0.0.1 ou CORAL_MQTT_HOST.')
     parser.add_argument('--port', type=int, default=1883)
+    parser.add_argument('--blue', action='append', help='Mensagem azul; repita para alternar mensagens.')
+    parser.add_argument('--yellow', action='append', help='Mensagem amarela; repita para alternar mensagens.')
     action = parser.add_mutually_exclusive_group()
     action.add_argument('--status', action='store_true')
     action.add_argument('--clear', action='store_true')
     action.add_argument('--clock', action='store_true')
+    action.add_argument('--regions-json', action='store_true', help='Ler objeto blue/yellow do stdin.')
     args = parser.parse_args()
-    if (args.status or args.clear or args.clock) and args.text:
+    regions = args.blue is not None or args.yellow is not None
+    if (args.status or args.clear or args.clock or args.regions_json) and (args.text or regions):
         parser.error('Nao combine mensagem e comando.')
-    if not (args.status or args.clear or args.clock or args.text):
+    if regions and args.text:
+        parser.error('Use texto simples ou --blue/--yellow.')
+    if not (args.status or args.clear or args.clock or args.regions_json or args.text or regions):
         parser.error('Informe uma mensagem ou --status/--clear/--clock.')
     try:
-        if args.status:
+        if args.regions_json:
+            values = json.load(sys.stdin)
+            if not isinstance(values, dict) or 'blue' not in values or 'yellow' not in values:
+                raise ValueError('Informe um objeto com blue e yellow.')
+            result = publish_regions(values['blue'], values['yellow'], args.host, args.port)
+        elif regions:
+            result = publish_regions(args.blue or [''], args.yellow or [''], args.host, args.port)
+        elif args.status:
             result = exchange(host=args.host, port=args.port)
         elif args.clear or args.clock:
             result = exchange({'cmd': 'clear' if args.clear else 'clock'}, args.host, args.port)

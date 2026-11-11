@@ -4,10 +4,29 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from sub.subscriber import DesiredScreen, parse_message
+from sub.subscriber import DesiredScreen, parse_message, screen_matches
+from pub.messages import region_messages
 
 
 class PubSubTests(unittest.TestCase):
+    def test_regions_normalize_and_detect_reset(self):
+        request = parse_message(json.dumps({'cmd': 'regions', 'blue': ['Ação', 'Coral'],
+                                           'yellow': 'Pronta'}).encode())
+        self.assertEqual(request['blue'], ['Acao', 'Coral'])
+        self.assertEqual(request['yellow'], ['Pronta'])
+        state = dict(request, mode='regions', blue_index=1, blue_page_offset=10)
+        self.assertTrue(screen_matches(state, request))
+        self.assertFalse(screen_matches(dict(state, yellow=['Errado']), request))
+        self.assertFalse(screen_matches(dict(state, mode='text'), request))
+
+    def test_regions_limits_and_blank_area(self):
+        self.assertEqual(region_messages('', '')['yellow'], [''])
+        self.assertEqual(len(region_messages('a' * 1024, '')['blue'][0]), 1024)
+        for blue, yellow in (([], 'ok'), (['x'] * 9, 'ok'), ('ok', None),
+                             ([1], 'ok'), ('a' * 1024, 'b'), ('ok', '\x00')):
+            with self.assertRaises(ValueError):
+                region_messages(blue, yellow)
+
     def test_plain_text(self):
         result = parse_message('Olá, Coral'.encode())
         self.assertEqual(result['text'], 'Ola, Coral')

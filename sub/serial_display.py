@@ -9,7 +9,7 @@ import time
 import uuid
 
 import serial
-from pub.messages import display_text
+from pub.messages import display_text, region_messages
 
 
 def default_port():
@@ -76,6 +76,9 @@ class Display:
 
     def show(self, text, remember=True):
         return self.request('text', text=display_text(text), remember=remember)
+
+    def show_regions(self, blue, yellow, remember=True):
+        return self.request('regions', remember=remember, **region_messages(blue, yellow))
 
     def status(self):
         return self.request('status')

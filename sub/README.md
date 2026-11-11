@@ -73,8 +73,15 @@ instalado nela. O backup original da placa de desenvolvimento não é distribuí
 - SSD1306 128 × 64; SDA=21, SCL=22; endereço 0x3C ou 0x3D.
 - DS3231 opcional em 0x68: apenas leitura, sem ajuste de data/hora.
 - Rotação 180° em `oled.setRotation(2)`; ajuste para outra montagem.
-- `text_layout.h` calcula palavras, fonte, páginas e centralização para 128 × 64.
-  Para outro tamanho, adapte também os limites desse arquivo.
+- `text_layout.h` calcula palavras, fonte, páginas e centralização por área: azul
+  em y=0..47 e amarelo em y=48..63, na orientação atual. Essas cores pertencem ao
+  painel físico. Para outra montagem, ajuste `BLUE_TOP`, `BLUE_HEIGHT`, `YELLOW_TOP`,
+  `YELLOW_HEIGHT` e a rotação. Texto simples usa o azul; o relógio usa data/hora no
+  azul e temperatura no amarelo. Firmware 1.2 acrescenta o comando `regions`.
+- Cada região tem seu próprio índice de mensagem e página. O intervalo é de 3 s;
+  uma mensagem curta única fica fixa. Listas têm até 8 itens por região, com limite
+  total de 1024 caracteres. O comando serial recebe `blue` e `yellow` como arrays.
+  API: `display.show_regions("Coral", "Pronta", remember=False)`.
 - USB serial 115200 baud, 8N1, JSON por linha, até 2304 bytes por quadro.
 - O assinante usa `remember=False`; persistência no broker, sem gravar cada texto na flash.
 

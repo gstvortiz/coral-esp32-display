@@ -1,7 +1,8 @@
 # Coral → ESP32 → OLED por MQTT
 
 Publique uma mensagem no PC ou na Coral. Um assinante permanente na Coral encaminha o
-texto ao ESP32 por USB, e o firmware o mostra centralizado no OLED SSD1306.
+texto ao ESP32 por USB. O OLED tem duas áreas independentes: azul em cima (128 × 48)
+e amarela embaixo (128 × 16), com mensagens centralizadas em cada área.
 
 ```text
 pub/ (PC ou Coral) → broker MQTT na Coral → sub/ (Coral) → USB → firmware (ESP32) → OLED
@@ -35,6 +36,8 @@ Execute a partir da raiz deste repositório. A Coral precisa estar preparada con
 Na Coral:
 
 ```sh
+python3 -m pub --blue "Coral" --yellow "Pronta"
+python3 -m pub --blue "Primeira" --blue "Segunda" --yellow "Online"
 python3 -m pub "Coral"
 python3 -m pub "Outra mensagem"
 printf 'Linha 1\nLinha 2' | python3 -m pub -
@@ -46,7 +49,7 @@ python3 -m pub --status
 No PC, usando SSH já configurado:
 
 ```sh
-python3 -m pub.pc "Mensagem do PC" --host mendel@ENDERECO_DA_CORAL
+python3 -m pub.pc --blue "Mensagem do PC" --yellow "Online" --host mendel@ENDERECO_DA_CORAL
 ```
 
 O publicador do PC usa somente a biblioteca padrão Python e o comando `ssh`. O diretório
@@ -56,8 +59,13 @@ Veja [pub/README.md](pub/README.md) para APIs Python e MQTT direto.
 ## Comportamento
 
 - Texto centralizado horizontal e verticalmente, com rotação de 180° para a montagem usada.
-- Fonte automática; textos longos são divididos em páginas de 3 segundos.
-- Até 1024 caracteres após transliteração: `ação` aparece como `acao`; símbolos não
+- Fonte automática por área; mensagens curtas ficam fixas. Textos longos são divididos
+  em páginas de 3 segundos, sem atravessar a divisão entre azul e amarelo.
+- Cada área aceita de 1 a 8 mensagens, alternadas em ciclo após suas páginas. A área
+  com uma mensagem curta permanece fixa enquanto a outra alterna.
+- Cada publicação substitui as duas áreas juntas. Área omitida na CLI fica vazia;
+  texto simples usa somente a área azul. As cores são físicas, não selecionáveis por pixel.
+- Até 1024 caracteres no total das duas áreas, após transliteração: `ação` aparece como `acao`; símbolos não
   disponíveis na fonte viram `?`.
 - Última mensagem retida no broker e reaplicada após reconexão do assinante.
 - Serial permanece aberta; atualizações do assinante não são gravadas na flash do ESP32.
@@ -92,15 +100,20 @@ visualmente. A organização em `pub/` e `sub/` também foi testada no hardware 
 Não estão incluídos binários, backups da flash, dados MQTT persistidos, credenciais,
 ambientes Python ou ferramentas de terceiros.
 
-### Validação da versão publicada — 10/11/2026
+### Validação da versão 1.2 — 10/11/2026
 
-- 11 testes Python passaram no PC e na Coral.
-- Teste C++ de posicionamento passou na Coral com AddressSanitizer e UndefinedBehaviorSanitizer.
-- Firmware compilado para ESP32; fontes conferidas com as da versão instalada.
-- Publicador `python3 -m pub.pc` enviou `Teste OK!` pelo PC.
-- Assinante `python3 -m sub`, executado na Coral, encaminhou a mensagem ao ESP32.
-- Resposta recebida: `ok=true`, `oled=true`, `text=Teste OK!`, `alignment=center`, `rotation=180`.
+- 14 testes Python passaram no PC e na Coral.
+- Testes de layout e alternância C++ passaram com AddressSanitizer e UndefinedBehaviorSanitizer.
+- Firmware compilado, gravado e verificado no ESP32; 11 verificações de hardware passaram.
+- Publicação pelo PC confirmou `blue: ["Coral"]`, `yellow: ["Pronta"]`, `ok: true` e `oled: true`.
+- As duas mensagens foram reaplicadas pelo MQTT após reiniciar o assinante.
+- O serviço permanente da Coral executa agora o assinante deste repositório.
 
-O teste de integração usou um serviço temporário para o assinante deste repositório.
-O serviço habitual foi restaurado ao final. Os arquivos systemd fornecidos são modelos
-para instalação; ajuste caminhos e o executável do broker ao ambiente de destino.
+O teste `sub.test_hardware` cobre mensagens curtas fixas, alternância independente,
+paginação nas duas áreas, limite total de 1024 caracteres, listas, persistência e
+compatibilidade com texto simples, relógio e limpeza. Os testes C++ verificam que
+nenhum glifo ultrapassa os limites da sua área. A identificação física das cores e a
+aparência final exigem confirmação visual no módulo utilizado.
+
+Os arquivos systemd fornecidos são modelos para instalação; ajuste caminhos e o
+executável do broker ao ambiente de destino.

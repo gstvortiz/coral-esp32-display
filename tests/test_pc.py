@@ -3,10 +3,20 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from pub.pc import publish
+from pub.pc import publish, publish_regions
 
 
 class RemotePublisherTests(unittest.TestCase):
+    @patch('pub.pc.subprocess.run')
+    def test_regions_travel_as_json_on_stdin(self, run):
+        run.return_value = SimpleNamespace(returncode=0, stdout='{"ok":true}', stderr='')
+        blue = ['Coral', '$(touch /tmp/never-run); `id`']
+        self.assertTrue(publish_regions(blue, 'Pronta')['ok'])
+        args, kwargs = run.call_args
+        self.assertEqual(json.loads(kwargs['input']), {'blue': blue, 'yellow': ['Pronta']})
+        self.assertTrue(args[0][-1].endswith('python3 -m pub --regions-json'))
+        self.assertNotIn(blue[1], args[0][-1])
+
     @patch('pub.pc.subprocess.run')
     def test_text_is_stdin_and_custom_directory_is_quoted(self, run):
         run.return_value = SimpleNamespace(returncode=0, stdout=json.dumps({'ok': True}), stderr='')

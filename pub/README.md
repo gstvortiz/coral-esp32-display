@@ -2,6 +2,30 @@
 
 Todos os exemplos partem da raiz do repositório.
 
+## Duas áreas independentes
+
+```sh
+# Duas mensagens fixas, se couberem:
+python3 -m pub.pc --blue "Coral" --yellow "Pronta"
+# Azul alterna; amarelo fica fixo:
+python3 -m pub.pc --blue "Primeira mensagem" --blue "Segunda mensagem" --yellow "Online"
+# Na Coral, use os mesmos argumentos com python3 -m pub.
+```
+
+```python
+from pub.pc import publish_regions  # Do PC via SSH
+# from pub.mqtt import publish_regions  # MQTT local ou host configurado
+publish_regions(blue="Coral", yellow="Pronta")
+publish_regions(blue=["Primeira", "Segunda"], yellow="Online")
+```
+
+Azul ocupa 128 × 48 pixels, amarelo 128 × 16. A fonte se ajusta separadamente;
+mensagens longas paginam a cada 3 segundos. Listas alternam depois de completar as
+páginas da mensagem atual. Uma mensagem curta única permanece fixa. Até 8 mensagens
+por área e 1024 caracteres no total, após normalização. String vazia apaga uma área.
+Cada envio define as duas áreas; omitir uma opção na CLI limpa essa área. Enviar texto
+simples continua funcionando, agora apenas no azul, com amarelo vazio.
+
 ## MQTT na Coral ou no PC
 
 ```sh
@@ -62,6 +86,17 @@ O assinante aceita texto UTF-8 simples ou um envelope JSON:
 ```json
 {"id":"pedido-1","cmd":"text","text":"Coral"}
 ```
+
+Para as duas áreas, envie strings ou listas:
+
+```json
+{"id":"pedido-2","cmd":"regions","blue":["Primeira","Segunda"],"yellow":"Online"}
+```
+
+O ACK devolve `mode: "regions"`, listas normalizadas `blue`/`yellow`, índices
+`blue_index`/`yellow_index` e posições `blue_page_offset`/`yellow_page_offset`.
+O estado MQTT é uma fotografia da confirmação, não um fluxo de cada troca de página.
+As duas áreas são reaplicadas após reconexão ou reset do ESP32.
 
 Também aceita `cmd: "clock"` e `cmd: "clear"`. IDs de até 64 caracteres. O estado inclui
 `id`, `ok`, `online` e dados do ESP32. Erros incluem `error`. `online: true` sozinho não

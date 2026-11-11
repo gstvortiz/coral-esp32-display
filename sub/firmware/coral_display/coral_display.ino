@@ -16,6 +16,56 @@ uint8_t address = 0;
 bool displayReady = false, dropping = false;
 size_t pageStart = 0, nextPage = 0;
 unsigned long lastDraw = 0;
+constexpr uint8_t MAX_MESSAGES = 8;
+String blue[MAX_MESSAGES], yellow[MAX_MESSAGES];
+uint8_t blueCount = 1, yellowCount = 1;
+RegionCursor blueCursor, yellowCursor;
+
+bool validText(const char *value) {
+  for (; *value; ++value) {
+    if (*value != '\n' && (uint8_t(*value) < 32 || uint8_t(*value) > 126)) return false;
+  }
+  return true;
+}
+
+bool validRegions(JsonVariantConst b, JsonVariantConst y) {
+  size_t length = 0;
+  for (JsonVariantConst value : {b, y}) {
+    if (!value.is<JsonArrayConst>() || !value.size() || value.size() > MAX_MESSAGES) return false;
+    for (JsonVariantConst item : value.as<JsonArrayConst>()) {
+      if (!item.is<const char *>()) return false;
+      const char *s = item.as<const char *>();
+      if (!validText(s)) return false;
+      length += strlen(s);
+    }
+  }
+  return length <= MAX_TEXT;
+}
+
+void loadRegions(JsonVariantConst b, JsonVariantConst y) {
+  blueCount = b.size(); yellowCount = y.size();
+  for (uint8_t i = 0; i < MAX_MESSAGES; ++i) {
+    blue[i] = i < blueCount ? b[i].as<const char *>() : "";
+    yellow[i] = i < yellowCount ? y[i].as<const char *>() : "";
+  }
+}
+
+void regionFields(JsonDocument &doc) {
+  JsonArray b = doc.createNestedArray("blue"), y = doc.createNestedArray("yellow");
+  for (uint8_t i = 0; i < blueCount; ++i) b.add(blue[i]);
+  for (uint8_t i = 0; i < yellowCount; ++i) y.add(yellow[i]);
+}
+
+size_t drawText(const String &value, size_t start, int top, int height) {
+  int scale = textScale(value.c_str(), height);
+  TextPage page = layoutPage(value.c_str(), start, scale, height);
+  oled.setTextSize(scale);
+  for (int row = 0; row < page.count; ++row) {
+    oled.setCursor(centeredX(page.lines[row], scale), centeredY(row, page.count, scale, height, top));
+    oled.print(page.lines[row]);
+  }
+  return page.next;
+}
 
 bool probe(uint8_t addr) {
   Wire.beginTransmission(addr);
@@ -55,33 +105,26 @@ void draw() {
   oled.setCursor(0, 0);
   if (mode == "clock") {
     char date[16], clock[12]; float temperature;
-    oled.print("CORAL / RTC");
     if (rtcInfo(date, clock, temperature)) {
-      oled.setCursor(0, 16); oled.print(date);
-      oled.setTextSize(2); oled.setCursor(0, 30); oled.print(clock);
-      oled.setTextSize(1); oled.setCursor(0, 54);
-      oled.print(temperature, 1); oled.print(" C");
+      drawText(String(date) + "\n" + clock, 0, BLUE_TOP, BLUE_HEIGHT);
+      drawText(String(temperature, 1) + " C", 0, YELLOW_TOP, YELLOW_HEIGHT);
     } else {
-      oled.setCursor(0, 24); oled.print("RTC indisponivel");
+      drawText("RTC indisponivel", 0, BLUE_TOP, BLUE_HEIGHT);
     }
   } else if (mode == "text") {
-    int size = textScale(text.c_str());
-    TextPage page = layoutPage(text.c_str(), pageStart, size);
-    oled.setTextSize(size);
-    for (int row = 0; row < page.count; ++row) {
-      oled.setCursor(centeredX(page.lines[row], size), centeredY(row, page.count, size));
-      oled.print(page.lines[row]);
-    }
-    nextPage = page.next;
+    nextPage = drawText(text, pageStart, BLUE_TOP, BLUE_HEIGHT);
+  } else if (mode == "regions") {
+    blueCursor.next = drawText(blue[blueCursor.index], blueCursor.start, BLUE_TOP, BLUE_HEIGHT);
+    yellowCursor.next = drawText(yellow[yellowCursor.index], yellowCursor.start, YELLOW_TOP, YELLOW_HEIGHT);
   }
   oled.display();
 }
 
 void respond(const char *id, bool ok, const char *error = nullptr) {
-  StaticJsonDocument<1536> out;
+  DynamicJsonDocument out(4096);
   out["id"] = id;
   out["ok"] = ok;
-  out["firmware"] = "coral-display/1.1";
+  out["firmware"] = "coral-display/1.2";
   out["alignment"] = "center";
   out["rotation"] = 180;
   out["oled"] = displayReady && probe(address);
@@ -89,6 +132,13 @@ void respond(const char *id, bool ok, const char *error = nullptr) {
   out["mode"] = mode;
   out["text"] = text;
   out["page_offset"] = pageStart;
+  out["blue_height"] = BLUE_HEIGHT;
+  out["yellow_height"] = YELLOW_HEIGHT;
+  if (mode == "regions") {
+    regionFields(out);
+    out["blue_index"] = blueCursor.index; out["yellow_index"] = yellowCursor.index;
+    out["blue_page_offset"] = blueCursor.start; out["yellow_page_offset"] = yellowCursor.start;
+  }
   if (error) out["error"] = error;
   char date[16], clock[12]; float temperature;
   if (rtcInfo(date, clock, temperature)) {
@@ -99,7 +149,7 @@ void respond(const char *id, bool ok, const char *error = nullptr) {
 }
 
 void handle() {
-  StaticJsonDocument<3072> doc;
+  DynamicJsonDocument doc(4096);
   if (deserializeJson(doc, input)) { respond("", false, "invalid_json"); return; }
   const char *id = doc["id"] | "";
   const char *cmd = doc["cmd"] | "";
@@ -116,6 +166,11 @@ void handle() {
     }
     if (!displayReady || !probe(address)) { respond(id, false, "oled_unavailable"); return; }
     text = value; mode = "text";
+  } else if (!strcmp(cmd, "regions")) {
+    if (!validRegions(doc["blue"], doc["yellow"])) { respond(id, false, "invalid_regions"); return; }
+    if (!displayReady || !probe(address)) { respond(id, false, "oled_unavailable"); return; }
+    loadRegions(doc["blue"], doc["yellow"]);
+    text = ""; mode = "regions";
   } else if (!strcmp(cmd, "clear") || !strcmp(cmd, "clock")) {
     if (!displayReady || !probe(address)) { respond(id, false, "oled_unavailable"); return; }
     mode = !strcmp(cmd, "clear") ? "clear" : "clock";
@@ -123,6 +178,14 @@ void handle() {
   // Persist only when requested and changed. Streaming clients can disable this.
   if (doc["remember"] | true) {
     bool saved = true;
+    if (mode == "regions") {
+      DynamicJsonDocument stored(4096); regionFields(stored);
+      String encoded; serializeJson(stored, encoded);
+      if (prefs.getString("regions", "") != encoded) {
+        prefs.putString("regions", encoded);
+        saved &= prefs.getString("regions", "") == encoded;
+      }
+    }
     if (prefs.getString("text", "Coral") != text) {
       prefs.putString("text", text);
       saved &= prefs.getString("text", "\x01") == text;
@@ -134,6 +197,7 @@ void handle() {
     if (!saved) { respond(id, false, "storage_error"); return; }
   }
   pageStart = nextPage = 0;
+  blueCursor = RegionCursor(); yellowCursor = RegionCursor();
   draw();
   respond(id, probe(address), probe(address) ? nullptr : "oled_disconnected");
 }
@@ -150,6 +214,12 @@ void setup() {
   prefs.begin("coral-display", false);
   text = prefs.getString("text", "Coral");
   mode = prefs.getString("mode", "text");
+  if (mode == "regions") {
+    DynamicJsonDocument saved(4096);
+    if (!deserializeJson(saved, prefs.getString("regions", "")) && validRegions(saved["blue"], saved["yellow"]))
+      loadRegions(saved["blue"], saved["yellow"]);
+    else { mode = "text"; text = "Coral"; }
+  }
   input.reserve(MAX_FRAME);
   draw();
   respond("boot", displayReady, displayReady ? nullptr : "oled_unavailable");
@@ -170,6 +240,11 @@ void loop() {
   if (mode == "clock" && millis() - lastDraw >= 1000) draw();
   if (mode == "text" && (nextPage || pageStart) && millis() - lastDraw >= 3000) {
     pageStart = nextPage; draw();
+  }
+  if (mode == "regions" && millis() - lastDraw >= 3000) {
+    bool changed = blueCursor.advance(blueCount);
+    changed |= yellowCursor.advance(yellowCount);
+    if (changed) draw();
   }
   delay(1);
 }

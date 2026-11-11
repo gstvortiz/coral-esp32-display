@@ -9,7 +9,7 @@ import uuid
 
 import paho.mqtt.client as mqtt
 from .serial_display import Display
-from pub.messages import display_text
+from pub.messages import display_text, region_messages
 from pub.messages import COMMAND_TOPIC, STATE_TOPIC
 
 
@@ -26,13 +26,22 @@ def parse_message(payload):
     request.setdefault('id', uuid.uuid4().hex)
     if not isinstance(request['id'], str) or len(request['id']) > 64:
         raise ValueError('invalid_id')
-    if request.get('cmd') not in ('text', 'clear', 'clock'):
+    if request.get('cmd') not in ('text', 'regions', 'clear', 'clock'):
         raise ValueError('unknown_command')
     if request['cmd'] == 'text':
         if not isinstance(request.get('text'), str):
             raise ValueError('text_required')
         request['text'] = display_text(request['text'])
+    if request['cmd'] == 'regions':
+        request.update(region_messages(request.get('blue'), request.get('yellow')))
     return request
+
+
+def screen_matches(status, request):
+    if status.get('mode') != request['cmd']:
+        return False
+    keys = ('blue', 'yellow') if request['cmd'] == 'regions' else ('text',) if request['cmd'] == 'text' else ()
+    return all(status.get(key) == request[key] for key in keys)
 
 
 class DesiredScreen:
@@ -106,12 +115,13 @@ def run():
                             continue
                         if revision == applied_revision:
                             status = display.status()  # Detect USB loss or an MCU reset while idle.
-                            if status.get('mode') != request['cmd'] or (
-                                    request['cmd'] == 'text' and status.get('text') != request['text']):
+                            if not screen_matches(status, request):
                                 applied_revision = -1
                             continue
                         if request['cmd'] == 'text':
                             result = display.show(request['text'], remember=False)
+                        elif request['cmd'] == 'regions':
+                            result = display.show_regions(request['blue'], request['yellow'], remember=False)
                         else:
                             result = getattr(display, request['cmd'])(remember=False)
                         result['serial_id'] = result['id']
