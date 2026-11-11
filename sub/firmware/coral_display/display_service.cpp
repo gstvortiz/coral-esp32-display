@@ -380,4 +380,3 @@ bool lockI2c(TickType_t wait) {
 }
 void unlockI2c() { xSemaphoreGiveRecursive(i2cMutex); }
 }  // namespace CoralDisplay
-
