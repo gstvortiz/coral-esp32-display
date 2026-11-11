@@ -78,6 +78,7 @@ python3 -m pub --host 127.0.0.1 --port 18883 "Mensagem pelo tunel"
 | --- | --- |
 | Entrada | `coral/display/text` |
 | Confirmação/estado | `coral/display/state` |
+| Eventos espontâneos (sem retenção) | `coral/esp32/events` |
 | QoS do publicador fornecido | 1 |
 | Retenção | Ativada, preserva o último estado desejado |
 
@@ -112,3 +113,34 @@ single("coral/display/text", "Ola, Coral", hostname="127.0.0.1", qos=1, retain=T
 Esse exemplo confirma entrega ao broker. `pub.mqtt.publish` aguarda também o ESP32.
 Se outro publicador substituir uma mensagem pendente, a confirmação dela pode não chegar.
 Publique sequencialmente quando precisar confirmar cada atualização.
+
+## Receber eventos do ESP32
+
+No PC (biblioteca padrão Python + SSH):
+
+```sh
+python3 -m pub.pc --events
+python3 -m pub.pc --events --count 2 --timeout 30
+```
+
+Na Coral (Paho instalado):
+
+```sh
+python3 -m pub.events
+python3 -m pub.events --count 2 --timeout 30
+```
+
+A saída é um JSON por linha. O firmware de exemplo publica `application_tick` a cada
+10 segundos a partir do `loop()`, sem precisar de comando. Ctrl+C encerra a escuta.
+
+API Python para MQTT local ou broker acessível:
+
+```python
+from pub.events import listen
+listen(lambda event: print(event["event"], event["data"]), count=2, timeout=30)
+```
+
+O tópico `coral/esp32/events` usa QoS 1 e não tem retenção. O consumidor deve estar
+conectado quando o evento ocorre; isso não é um histórico ou garantia de entrega
+fim a fim. Use `boot_id` + `seq` para reconhecer duplicatas e `task_id` para identificar
+a operação. O tópico `coral/display/state` continua reservado às confirmações da tela.

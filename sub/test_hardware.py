@@ -8,9 +8,12 @@ from .serial_display import Display
 
 def main():
     checks = []
-    with Display() as display:
+    events = []
+    with Display(on_event=events.append) as display:
         initial = display.status()
-        assert initial['firmware'] == 'coral-display/1.2', initial
+        assert initial['firmware'] == 'coral-display/1.3', initial
+        assert initial['service_task'] == 'coral-display' and initial['boot_id'], initial
+        boot_id = initial['boot_id']
         assert initial['oled'] and initial['address'] in (60, 61), initial
         checks.append('firmware e OLED respondem')
         result = display.show('Olá, Coral!\nTeste de conexão.', remember=False)
@@ -65,6 +68,15 @@ def main():
         clock = display.clock(remember=False)
         assert clock['mode'] == 'clock' and 'rtc_time' in clock, clock
         checks.append('limpar tela e consultar RTC')
+        deadline = time.monotonic() + 12
+        while not any(e.get('event') == 'application_tick' for e in events) and time.monotonic() < deadline:
+            display.poll_events()
+        ticks = [e for e in events if e.get('event') == 'application_tick']
+        assert ticks and ticks[0]['data']['task'] == 'loopTask', events
+        assert all(e['boot_id'] == boot_id for e in ticks), ticks
+        state = display.status()
+        assert state['stack_free_min'] > 1024 and state['boot_id'] == boot_id, state
+        checks.append('eventos do loop paralelo, ACKs e pilha da tarefa')
         assert display.show_regions('Coral', 'Pronta')['mode'] == 'regions'
     with Display() as display:
         state = display.status()

@@ -3,6 +3,7 @@ import unicodedata
 
 COMMAND_TOPIC = "coral/display/text"
 STATE_TOPIC = "coral/display/state"
+EVENT_TOPIC = "coral/esp32/events"
 
 
 def region_messages(blue, yellow):

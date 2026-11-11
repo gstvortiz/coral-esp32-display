@@ -82,7 +82,7 @@ instalado nela. O backup original da placa de desenvolvimento não é distribuí
   uma mensagem curta única fica fixa. Listas têm até 8 itens por região, com limite
   total de 1024 caracteres. O comando serial recebe `blue` e `yellow` como arrays.
   API: `display.show_regions("Coral", "Pronta", remember=False)`.
-- USB serial 115200 baud, 8N1, JSON por linha, até 2304 bytes por quadro.
+- USB serial 115200 baud, 8N1, JSON por linha, até 2304 bytes por comando recebido.
 - O assinante usa `remember=False`; persistência no broker, sem gravar cada texto na flash.
 
 ## Manutenção e teste real
@@ -109,3 +109,96 @@ Referências: [Mosquitto](https://mosquitto.org/download/),
 [Paho MQTT](https://eclipse.dev/paho/files/paho.mqtt.python/html/client.html),
 [SSD1306](https://github.com/adafruit/Adafruit_SSD1306) e
 [esptool](https://docs.espressif.com/projects/esptool/en/latest/esp32/esptool/basic-commands.html).
+
+## Integrar a aplicação ao firmware 1.3
+
+- `coral_display.ino`: chama `CoralDisplay::begin()` no `setup()`; o `loop()` é da aplicação.
+- `display_service.h`: API para outras tarefas, sem acesso direto ao OLED ou à serial.
+- `display_service.cpp`: tarefa `coral-display`, fila de 8 entradas copiadas, protocolo,
+  persistência, OLED e RTC. Pilha de 12 KiB, prioridade 1, sem fixar núcleo.
+- `text_layout.h`: cálculo das duas áreas e da paginação.
+
+A inicialização espera a tarefa preparar Serial e Wire. O buffer de recepção UART tem 4096 bytes, acomodando um comando completo durante
+uma transmissão. O serviço limita a leitura
+serial por iteração, processa a fila e cede tempo ao escalonador, mesmo sob carga.
+Só essa tarefa deve escrever em `Serial` ou acessar o OLED. Não use `Serial.print`
+para logs de outras tarefas: envie um evento ou use outra UART. As tarefas compartilham
+memória; travamentos globais, interrupções desabilitadas e tarefas que monopolizam a
+CPU ainda podem afetar todo o firmware.
+
+Exemplo dentro do `loop()` ou de outra tarefa:
+
+```cpp
+#include "display_service.h"
+
+// Até 1024 caracteres ASCII no total; string vazia apaga uma área.
+bool queued = CoralDisplay::postRegions("Medicao pronta", "OK", "medicao-123");
+// JSON objeto de até 768 bytes; nome e identificador de até 64 bytes.
+bool reported = CoralDisplay::postEvent(
+    "processo_concluido", "{\"valor\":42,\"ok\":true}", "medicao-123");
+```
+
+`true` significa que a fila aceitou uma cópia do pedido. `false` significa entrada
+inválida, serviço indisponível ou fila cheia; a aplicação decide se tenta novamente.
+Não há espera por padrão. O último argumento permite uma espera limitada, por exemplo
+`pdMS_TO_TICKS(20)`. As APIs são para tarefas, não interrupções. Elas usam um buffer temporário de cerca
+de 2,3 KiB na pilha de quem chama; dimensione a pilha das suas tarefas com essa folga
+além do espaço exigido pela aplicação. Um pedido local de
+display produz o evento `display_applied`, cujo `data.ok` confirma sua aplicação ou
+`data.error` descreve a falha. Esses pedidos não gravam a flash nem alteram o MQTT retido.
+Uma nova publicação, reset ou reconexão reaplica a mensagem da Coral.
+
+Para compartilhar o barramento com outro sensor:
+
+```cpp
+#include <Wire.h>
+if (CoralDisplay::lockI2c(pdMS_TO_TICKS(50))) {
+    // Transação curta com o sensor usando Wire; não reinicialize o barramento.
+    CoralDisplay::unlockI2c();  // Sempre liberar, inclusive em caminhos de erro.
+}
+```
+
+O mutex é recursivo e também é usado pelo serviço. Nunca espere por fila, rede ou
+operação longa segurando esse mutex. O módulo continua sendo o único dono do OLED.
+
+## Eventos na serial e no MQTT
+
+O ESP32 envia, sem precisar de consulta:
+
+```json
+{"type":"event","event":"processo_concluido","task_id":"medicao-123","data":{"valor":42,"ok":true},"boot_id":"...","seq":1,"uptime_ms":10000}
+```
+
+Confirmações usam `type: "ack"` e o `id` do comando. O leitor Python mantém o buffer
+entre leituras, separa eventos de ACKs e também lê quando não há comandos pendentes.
+O callback `Display(on_event=...)` recebe eventos durante `request()` e `poll_events()`;
+esses métodos devem ser chamados pela mesma thread. O callback deve ser rápido.
+O assinante encaminha eventos para `coral/esp32/events`, QoS 1, `retain=False`.
+
+Eventos não são um histórico persistente: podem ser perdidos durante boot, desconexão,
+fila cheia ou parada do serviço. QoS 1 pode duplicar entregas; use `(boot_id, seq)` para
+identificar eventos. `task_id` correlaciona com a operação da aplicação. O estado inclui
+`boot_id`, `service_task`, `stack_free_min` (bytes) e `queue_rejected` para diagnóstico.
+O publicador de tela continua aguardando ACK; eventos não contam como confirmação.
+
+## Teste adicional da fila no hardware
+
+`tests/queue_example.ino` é um sketch de teste, não a aplicação padrão. Em uma cópia
+temporária da pasta do firmware, substitua `coral_display.ino` por esse arquivo,
+compile e grave. Com o serviço parado, execute na raiz do repositório:
+
+```sh
+PYTHONPATH=. python3 tests/check_queue_hardware.py
+```
+
+Ele testa pedido local de display, evento espontâneo, rejeição de JSON inválido e
+preservação de um comando UART fragmentado enquanto a fila é processada. Ao terminar,
+regrave o sketch normal e reinicie o assinante. `python3 -m sub.test_hardware` valida
+a versão normal, incluindo eventos do `loopTask` e respostas da tarefa `coral-display`.
+
+Referência: [FreeRTOS no ESP-IDF 4.4](https://docs.espressif.com/projects/esp-idf/en/v4.4.8/esp32/api-reference/system/freertos.html).
+
+Para exercitar comunicação nos dois sentidos com o firmware normal instalado e o
+assinante parado, execute `PYTHONPATH=. python3 tests/check_duplex_hardware.py`.
+Ele envia textos de 1024 caracteres com escapes por 12 segundos, verifica cada ACK e
+confirma a chegada de eventos da tarefa da aplicação durante as transmissões.

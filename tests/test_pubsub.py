@@ -4,11 +4,30 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from sub.subscriber import DesiredScreen, parse_message, screen_matches
+from sub.subscriber import DesiredScreen, parse_message, screen_matches, needs_replay, forward_event
+from unittest.mock import Mock
+from pub.messages import EVENT_TOPIC
 from pub.messages import region_messages
 
 
 class PubSubTests(unittest.TestCase):
+    def test_local_display_change_is_preserved_until_reset(self):
+        desired = {'cmd': 'regions', 'blue': ['MQTT'], 'yellow': ['Online']}
+        local = {'mode': 'regions', 'blue': ['Local'], 'yellow': ['Fila'], 'boot_id': 'one'}
+        self.assertFalse(needs_replay(local, desired, 'one'))
+        self.assertTrue(needs_replay(dict(local, boot_id='two'), desired, 'one'))
+        self.assertTrue(needs_replay(dict(local, boot_id=None), desired, None))
+
+    def test_events_are_not_retained_as_screen_state(self):
+        mqtt_client = Mock()
+        mqtt_client.publish.return_value.rc = 0
+        event = {'type': 'event', 'event': 'finished', 'boot_id': 'one', 'seq': 2}
+        forward_event(mqtt_client, event)
+        args, kwargs = mqtt_client.publish.call_args
+        self.assertEqual(args[0], EVENT_TOPIC)
+        self.assertEqual(json.loads(args[1]), event)
+        self.assertEqual(kwargs, {'qos': 1, 'retain': False})
+
     def test_regions_normalize_and_detect_reset(self):
         request = parse_message(json.dumps({'cmd': 'regions', 'blue': ['Ação', 'Coral'],
                                            'yellow': 'Pronta'}).encode())

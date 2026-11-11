@@ -39,10 +39,46 @@ def client(peer):
     obj = Display.__new__(Display)
     obj.serial = peer
     obj.timeout = 0.03
+    obj.buffer = bytearray()
+    obj.on_event = None
     return obj
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_events_before_ack_and_buffered_after_ack(self):
+        class EventPeer(Device):
+            @property
+            def in_waiting(self):
+                return len(self.pending)
+
+            def write(self, packet):
+                request = json.loads(packet)
+                # An event may carry the same ID; it must not be mistaken for ACK.
+                for frame in ({'type': 'event', 'event': 'before', 'id': request['id']},
+                              {'type': 'ack', 'id': request['id'], 'ok': True},
+                              {'type': 'event', 'event': 'after'}):
+                    self.pending.extend(json.dumps(frame).encode() + b'\n')
+                self.pending.extend(b'{"type":"event","event":"frag')
+
+        peer = EventPeer()
+        display = client(peer)
+        events = []
+        display.on_event = events.append
+        self.assertTrue(display.status()['ok'])
+        display.poll_events(0.01)
+        peer.pending.extend(b'mented"}\n')
+        display.poll_events(0.01)
+        self.assertEqual([event['event'] for event in events], ['before', 'after', 'fragmented'])
+
+    def test_events_without_any_command(self):
+        peer = Device()
+        peer.pending.extend(b'{"type":"event","event":"finished"}\n')
+        display = client(peer)
+        events = []
+        display.on_event = events.append
+        display.poll_events(0.01)
+        self.assertEqual(events[0]['event'], 'finished')
+
     def test_fragments_and_stale_ack(self):
         peer = Device()
         result = client(peer).show('Olá, Coral!\nMedição', remember=False)

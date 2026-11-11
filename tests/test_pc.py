@@ -3,10 +3,18 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from pub.pc import publish, publish_regions
+from pub.pc import publish, publish_regions, listen_events
 
 
 class RemotePublisherTests(unittest.TestCase):
+    @patch('pub.pc.subprocess.call')
+    def test_event_stream_uses_ssh_and_inherits_output(self, call):
+        call.return_value = 0
+        self.assertEqual(listen_events(remote_dir='/home/mendel/my project', count=2, timeout=20), 0)
+        args, kwargs = call.call_args
+        self.assertEqual(args[0][-1], "cd '/home/mendel/my project' && python3 -u -m pub.events --count 2 --timeout 20.0")
+        self.assertEqual(kwargs, {})
+
     @patch('pub.pc.subprocess.run')
     def test_regions_travel_as_json_on_stdin(self, run):
         run.return_value = SimpleNamespace(returncode=0, stdout='{"ok":true}', stderr='')

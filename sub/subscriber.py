@@ -5,12 +5,13 @@ import logging
 import os
 import signal
 import threading
+import time
 import uuid
 
 import paho.mqtt.client as mqtt
 from .serial_display import Display
 from pub.messages import display_text, region_messages
-from pub.messages import COMMAND_TOPIC, STATE_TOPIC
+from pub.messages import COMMAND_TOPIC, STATE_TOPIC, EVENT_TOPIC
 
 
 def parse_message(payload):
@@ -42,6 +43,21 @@ def screen_matches(status, request):
         return False
     keys = ('blue', 'yellow') if request['cmd'] == 'regions' else ('text',) if request['cmd'] == 'text' else ()
     return all(status.get(key) == request[key] for key in keys)
+
+
+def needs_replay(status, request, boot_id):
+    # Local firmware tasks may legitimately change the display. Replay only after
+    # a reset; older firmware without boot IDs keeps its original recovery policy.
+    if status.get('boot_id'):
+        return boot_id is not None and status['boot_id'] != boot_id
+    return not screen_matches(status, request)
+
+
+def forward_event(client, event):
+    # Events describe occurrences, not desired state: never retain/replay them.
+    info = client.publish(EVENT_TOPIC, json.dumps(event, ensure_ascii=False), qos=1, retain=False)
+    if info.rc != mqtt.MQTT_ERR_SUCCESS:
+        logging.warning('Evento %s nao confirmado na fila MQTT: rc=%s', event.get('event'), info.rc)
 
 
 class DesiredScreen:
@@ -105,18 +121,27 @@ def run():
     try:
         while not stopping.is_set():
             try:
-                with Display() as display:
+                with Display(on_event=lambda event: forward_event(client, event)) as display:
                     applied_revision = -1
+                    boot_id = None
+                    next_health = 0
                     while not stopping.is_set():
-                        revision, request = desired.get(applied_revision)
+                        revision, request = desired.get(applied_revision, timeout=0)
                         if request is None:
                             applied_revision = revision
-                            display.status()
+                            display.poll_events()
+                            if time.monotonic() >= next_health:
+                                boot_id = display.status().get('boot_id')
+                                next_health = time.monotonic() + 5
                             continue
                         if revision == applied_revision:
-                            status = display.status()  # Detect USB loss or an MCU reset while idle.
-                            if not screen_matches(status, request):
-                                applied_revision = -1
+                            display.poll_events()
+                            if time.monotonic() >= next_health:
+                                status = display.status()
+                                if needs_replay(status, request, boot_id):
+                                    applied_revision = -1
+                                boot_id = status.get('boot_id')
+                                next_health = time.monotonic() + 5
                             continue
                         if request['cmd'] == 'text':
                             result = display.show(request['text'], remember=False)
@@ -127,6 +152,8 @@ def run():
                         result['serial_id'] = result['id']
                         result.update(id=request['id'], online=True)
                         report(result)
+                        boot_id = result.get('boot_id')
+                        next_health = time.monotonic() + 5
                         applied_revision = revision
                         logging.info('Mensagem %s aplicada (%s)', request['id'], request['cmd'])
             except (OSError, RuntimeError, ValueError) as error:

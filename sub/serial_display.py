@@ -3,6 +3,7 @@
 import argparse
 import glob
 import json
+import logging
 import os
 import sys
 import time
@@ -25,8 +26,10 @@ def default_port():
 
 class Display:
     """Reusable connection. Context manager closes the serial port on exit."""
-    def __init__(self, port=None, timeout=6, boot_wait=2.5):
+    def __init__(self, port=None, timeout=6, boot_wait=2.5, on_event=None):
         self.timeout = timeout
+        self.on_event = on_event
+        self.buffer = bytearray()
         self.serial = serial.Serial(port=None, baudrate=115200, timeout=0.15,
                                     write_timeout=2, exclusive=True)
         self.serial.dtr = False
@@ -55,24 +58,52 @@ class Display:
             raise ValueError('Quadro serial excede 2304 bytes.')
         self.serial.write(packet)
         deadline = time.monotonic() + self.timeout
-        buffer = bytearray()
         while time.monotonic() < deadline:
-            buffer.extend(self.serial.read(self.serial.in_waiting or 1))
-            if len(buffer) > 16384:
-                raise RuntimeError('Resposta serial excede o limite.')
-            while b'\n' in buffer:
-                line, _, tail = buffer.partition(b'\n')
-                buffer = bytearray(tail)
+            result = self._read_frame(deadline)
+            if result is None or self._dispatch_event(result):
+                continue
+            if result.get('id') != request_id:
+                continue
+            if result.get('ok') is not True:
+                raise RuntimeError('ESP32: ' + str(result.get('error', result)))
+            return result
+        raise TimeoutError('ESP32 nao confirmou o comando. Verifique o firmware coral-display.')
+
+    def _read_frame(self, deadline):
+        while time.monotonic() < deadline:
+            if b'\n' in self.buffer:
+                line, _, tail = self.buffer.partition(b'\n')
+                self.buffer = bytearray(tail)
                 try:
-                    result = json.loads(line)
+                    value = json.loads(line)
                 except (ValueError, UnicodeError):
                     continue
-                if not isinstance(result, dict) or result.get('id') != request_id:
-                    continue
-                if result.get('ok') is not True:
-                    raise RuntimeError('ESP32: ' + str(result.get('error', result)))
-                return result
-        raise TimeoutError('ESP32 nao confirmou o comando. Verifique o firmware coral-display.')
+                if isinstance(value, dict):
+                    return value
+            else:
+                self.buffer.extend(self.serial.read(min(self.serial.in_waiting, 4096) or 1))
+                if len(self.buffer) > 16384:
+                    self.buffer.clear()
+                    raise RuntimeError('Resposta serial excede o limite.')
+        return None
+
+    def _dispatch_event(self, value):
+        if value.get('type') != 'event':
+            return False
+        if isinstance(value.get('event'), str) and self.on_event is not None:
+            try:
+                self.on_event(value)
+            except Exception:
+                logging.exception('Falha no consumidor de evento serial')
+        return True
+
+    def poll_events(self, timeout=0.15):
+        """Read while idle; call from the same thread as request(). No concurrent readers."""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            value = self._read_frame(deadline)
+            if value is not None:
+                self._dispatch_event(value)
 
     def show(self, text, remember=True):
         return self.request('text', text=display_text(text), remember=remember)
