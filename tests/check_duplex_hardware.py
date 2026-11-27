@@ -8,7 +8,7 @@ def main():
     events = []
     with Display(on_event=events.append) as display:
         initial = display.status()
-        assert initial['firmware'] == 'coral-display/1.3', initial
+        assert initial['firmware'] == 'coral-display/1.5', initial
         started = time.monotonic()
         requests = 0
         while time.monotonic() - started < 12:
@@ -21,8 +21,8 @@ def main():
             assert reply['service_task'] == 'coral-display', reply
             requests += 1
         display.poll_events(0.3)
-        ticks = [e for e in events if e.get('event') == 'application_tick']
-        assert ticks and all(e['data']['task'] == 'loopTask' for e in ticks), events
+        ticks = [e for e in events if e.get('event') == 'bird_record']
+        assert ticks and all('saved' in e['data'] for e in ticks), events
         assert reply['stack_free_min'] > 1024, reply
         display.show_regions('Coral', 'Pronta', remember=False)
         print(json.dumps({'duplex_test': 'passed', 'long_requests': requests,

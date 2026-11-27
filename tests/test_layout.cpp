@@ -15,8 +15,8 @@ int main() {
   assert(centeredY(0, 2, 3) == 0 && centeredY(1, 2, 3) == 24);
   auto words = layoutPage("Ola mundo", 0, 3);
   assert(!strcmp(words.lines[0], "Ola") && !strcmp(words.lines[1], "mundo"));
-  for (int height : {BLUE_HEIGHT, YELLOW_HEIGHT}) {
-  int top = height == BLUE_HEIGHT ? BLUE_TOP : YELLOW_TOP;
+  for (int height : {BLUE_HEIGHT, YELLOW_HEIGHT, BIRD_NAME_HEIGHT}) {
+  int top = height == YELLOW_HEIGHT ? YELLOW_TOP : BLUE_TOP;
   for (auto message : {std::string(1024, 'a'), std::string(1024, '\n'),
                        std::string(1024, ' '), std::string(""),
                        std::string("um dois tres quatro cinco seis sete oito nove dez")}) {
@@ -36,6 +36,14 @@ int main() {
       assert(++pages <= 1024);
     } while (start);
   }
+  }
+  for (const char *confidence : {"0%", "15%", "56%", "100%"}) {
+    int scale = textScale(confidence, BIRD_CONFIDENCE_HEIGHT);
+    auto page = layoutPage(confidence, 0, scale, BIRD_CONFIDENCE_HEIGHT);
+    assert(page.count == 1 && page.next == 0);
+    int y = centeredY(0, 1, scale, BIRD_CONFIDENCE_HEIGHT, BIRD_CONFIDENCE_TOP);
+    assert(y >= BLUE_TOP + BIRD_NAME_HEIGHT && y + 8 * scale <= YELLOW_TOP);
+    assert(centeredX(confidence, scale) >= 0);
   }
   RegionCursor fixed, rotating;
   assert(!fixed.advance(1));

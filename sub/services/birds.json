@@ -1,0 +1,8 @@
+{
+  "bundle": "/home/mendel/bird_recognition/current",
+  "device": "plughw:CARD=C920,DEV=0",
+  "threshold": 0.15,
+  "lifetime": 8,
+  "every": 3,
+  "threads": 4
+}

@@ -110,7 +110,7 @@ Referências: [Mosquitto](https://mosquitto.org/download/),
 [SSD1306](https://github.com/adafruit/Adafruit_SSD1306) e
 [esptool](https://docs.espressif.com/projects/esptool/en/latest/esp32/esptool/basic-commands.html).
 
-## Integrar a aplicação ao firmware 1.3
+## Integrar a aplicação ao firmware 1.5
 
 - `coral_display.ino`: chama `CoralDisplay::begin()` no `setup()`; o `loop()` é da aplicação.
 - `display_service.h`: API para outras tarefas, sem acesso direto ao OLED ou à serial.
@@ -133,7 +133,7 @@ Exemplo dentro do `loop()` ou de outra tarefa:
 
 // Até 1024 caracteres ASCII no total; string vazia apaga uma área.
 bool queued = CoralDisplay::postRegions("Medicao pronta", "OK", "medicao-123");
-// JSON objeto de até 768 bytes; nome e identificador de até 64 bytes.
+// JSON objeto de até 1536 bytes; nome e identificador de até 64 bytes.
 bool reported = CoralDisplay::postEvent(
     "processo_concluido", "{\"valor\":42,\"ok\":true}", "medicao-123");
 ```
@@ -194,7 +194,7 @@ PYTHONPATH=. python3 tests/check_queue_hardware.py
 Ele testa pedido local de display, evento espontâneo, rejeição de JSON inválido e
 preservação de um comando UART fragmentado enquanto a fila é processada. Ao terminar,
 regrave o sketch normal e reinicie o assinante. `python3 -m sub.test_hardware` valida
-a versão normal, incluindo eventos do `loopTask` e respostas da tarefa `coral-display`.
+a versão normal, incluindo eventos de registro do cartão e respostas da tarefa `coral-display`.
 
 Referência: [FreeRTOS no ESP-IDF 4.4](https://docs.espressif.com/projects/esp-idf/en/v4.4.8/esp32/api-reference/system/freertos.html).
 
@@ -202,3 +202,11 @@ Para exercitar comunicação nos dois sentidos com o firmware normal instalado e
 assinante parado, execute `PYTHONPATH=. python3 tests/check_duplex_hardware.py`.
 Ele envia textos de 1024 caracteres com escapes por 12 segundos, verifica cada ACK e
 confirma a chegada de eventos da tarefa da aplicação durante as transmissões.
+
+## Classificação, microfones e cartão
+
+A aplicação 1.5 é descrita em [BIRDS.md](../BIRDS.md). Pare também
+`coral-birds.service` antes dos testes manuais de display. O `loop()` está livre;
+`BirdMonitor` mantém aquisição e registro em tarefas próprias. Alterar o sketch para
+um exemplo de fila não inicia o monitor de pássaros; restaure o sketch de produção
+ao terminar o teste.

@@ -130,8 +130,8 @@ python3 -m pub.events
 python3 -m pub.events --count 2 --timeout 30
 ```
 
-A saída é um JSON por linha. O firmware de exemplo publica `application_tick` a cada
-10 segundos a partir do `loop()`, sem precisar de comando. Ctrl+C encerra a escuta.
+A saída é um JSON por linha. O firmware 1.4 publica `bird_record` a cada aproximadamente 5 segundos,
+com os dados e o resultado da escrita no microSD, sem precisar de comando. Ctrl+C encerra a escuta.
 
 API Python para MQTT local ou broker acessível:
 
@@ -144,3 +144,12 @@ O tópico `coral/esp32/events` usa QoS 1 e não tem retenção. O consumidor dev
 conectado quando o evento ocorre; isso não é um histórico ou garantia de entrega
 fim a fim. Use `boot_id` + `seq` para reconhecer duplicatas e `task_id` para identificar
 a operação. O tópico `coral/display/state` continua reservado às confirmações da tela.
+
+### Observações transitórias de pássaros
+
+O serviço `sub.birds` publica `cmd: "bird"` no mesmo tópico de comandos, com
+`active`, `name`, `scientific_name`, `score` e `expires_at` (Unix em segundos).
+`pub.mqtt.exchange` usa `retain=False` para esse comando. A ponte valida o payload
+e converte o vencimento em `ttl_ms` e hora atual `epoch_ms` na serial.
+Observações vencidas fecham a habilitação; mensagens `bird` retidas são ignoradas.
+Veja [BIRDS.md](../BIRDS.md).

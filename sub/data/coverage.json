@@ -1,0 +1,920 @@
+{
+  "total": 6522,
+  "portuguese": 6467,
+  "birds": 6421,
+  "birds_portuguese": 6421,
+  "sources": {
+    "aves_do_mundo_2023_2024": 591,
+    "birdnet_taxonomy_2026": 3302,
+    "birdnet_v2_pt_BR": 938,
+    "ebird_2026_pt_BR": 1594,
+    "ebird_2026_pt_AO": 30,
+    "model_fallback": 55,
+    "sound_labels": 11,
+    "avibase_CD3F3594C9FB5D10": 1
+  },
+  "unresolved": [
+    {
+      "scientific_name": "Allonemobius allardi",
+      "english": "Allard's Ground Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Allonemobius tinnulus",
+      "english": "Tinkling Ground Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Allonemobius walkeri",
+      "english": "Walker's Ground Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Amblycorypha alexanderi",
+      "english": "Clicker Round-winged Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Amblycorypha longinicta",
+      "english": "Common Virtuoso Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Amblycorypha oblongifolia",
+      "english": "Oblong-winged Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Amblycorypha rotundifolia",
+      "english": "Rattler Round-winged Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Anaxipha exigua",
+      "english": "Say's Trig",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Anaxyrus canorus",
+      "english": "Yosemite Toad",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Anaxyrus microscaphus",
+      "english": "Arizona Toad",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Atlanticus testaceus",
+      "english": "Protean Shieldback",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Conocephalus brevipennis",
+      "english": "Short-winged Meadow Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Conocephalus fasciatus",
+      "english": "Slender Meadow Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Cyrtoxipha columbiana",
+      "english": "Columbian Trig",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Dryophytes avivoca",
+      "english": "Bird-voiced Treefrog",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Eunemobius carolinus",
+      "english": "Carolina Ground Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Eunemobius confusus",
+      "english": "Confused Ground Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Gastrophryne carolinensis",
+      "english": "Eastern Narrow-mouthed Toad",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Gastrophryne olivacea",
+      "english": "Great Plains Narrow-mouthed Toad",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Gryllus fultoni",
+      "english": "Southern Wood Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Gryllus pennsylvanicus",
+      "english": "Fall Field Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Gryllus rubens",
+      "english": "Southeastern Field Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Incilius valliceps",
+      "english": "Gulf Coast Toad",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Microcentrum rhombifolium",
+      "english": "Greater Angle-wing",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Miogryllus saussurei",
+      "english": "Miogryllus saussurei",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Neoconocephalus bivocatus",
+      "english": "False Robust Conehead",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Neoconocephalus ensiger",
+      "english": "Sword-bearing Conehead",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Neoconocephalus retusus",
+      "english": "Round-tipped Conehead",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Neoconocephalus robustus",
+      "english": "Robust Conehead",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Neonemobius cubensis",
+      "english": "Cuban Ground Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Oecanthus celerinictus",
+      "english": "Fast-calling Tree Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Oecanthus exclamationis",
+      "english": "Davis's Tree Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Oecanthus fultoni",
+      "english": "Snowy Tree Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Oecanthus nigricornis",
+      "english": "Blackhorned Tree Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Oecanthus niveus",
+      "english": "Narrow-winged Tree Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Oecanthus pini",
+      "english": "Pine Tree Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Oecanthus quadripunctatus",
+      "english": "Four-spotted Tree Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Orchelimum agile",
+      "english": "Agile Meadow Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Orchelimum concinnum",
+      "english": "Stripe-faced Meadow Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Orchelimum pulchellum",
+      "english": "Handsome Meadow Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Orocharis saltator",
+      "english": "Jumping Bush Cricket",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Phyllopalpus pulchellus",
+      "english": "Handsome Trig",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Pseudacris brimleyi",
+      "english": "Brimley's Chorus Frog",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Pseudacris crucifer",
+      "english": "Spring Peeper",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Pseudacris feriarum",
+      "english": "Upland Chorus Frog",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Pseudacris nigrita",
+      "english": "Southern Chorus Frog",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Pseudacris ocularis",
+      "english": "Little Grass Frog",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Pseudacris ornata",
+      "english": "Ornate Chorus Frog",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Pseudacris streckeri",
+      "english": "Strecker's Chorus Frog",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Pseudacris triseriata",
+      "english": "Striped Chorus Frog",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Pterophylla camellifolia",
+      "english": "Common True Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Scaphiopus couchii",
+      "english": "Couch's Spadefoot",
+      "taxon_group": "Amphibia"
+    },
+    {
+      "scientific_name": "Scudderia curvicauda",
+      "english": "Curve-tailed Bush Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Scudderia furcata",
+      "english": "Fork-tailed Bush Katydid",
+      "taxon_group": "Insecta"
+    },
+    {
+      "scientific_name": "Scudderia texensis",
+      "english": "Texas Bush Katydid",
+      "taxon_group": "Insecta"
+    }
+  ],
+  "aliases": [
+    {
+      "model": "Accipiter bicolor",
+      "matched": "Astur bicolor",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Accipiter superciliosus",
+      "matched": "Microspizias superciliosus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Alophoixus finschii",
+      "matched": "Iole finschii",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Amblyornis newtoniana",
+      "matched": "Prionodura newtoniana",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Anthropoides paradiseus",
+      "matched": "Grus paradisea",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Anthus lutescens",
+      "matched": "Anthus chii",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Antilophia bokermanni",
+      "matched": "Chiroxiphia bokermanni",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Antilophia galeata",
+      "matched": "Chiroxiphia galeata",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Anurolimnas fasciatus",
+      "matched": "Rufirallus fasciatus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Anurolimnas viridis",
+      "matched": "Rufirallus viridis",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Apus melba",
+      "matched": "Tachymarptis melba",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Brachypodius eutilotus",
+      "matched": "Euptilotus eutilotus",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Brachypodius melanoleucos",
+      "matched": "Microtarsus melanoleucos",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Brachypodius urostictus",
+      "matched": "Poliolophus urostictus",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Bubulcus ibis",
+      "matched": "Ardea ibis",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Buceros vigil",
+      "matched": "Rhinoplax vigil",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Burhinus bistriatus",
+      "matched": "Hesperoburhinus bistriatus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Calyptorhynchus funereus",
+      "matched": "Zanda funerea",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Calyptorhynchus latirostris",
+      "matched": "Zanda latirostris",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Charadrius collaris",
+      "matched": "Anarhynchus collaris",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Charadrius falklandicus",
+      "matched": "Anarhynchus falklandicus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Charadrius leschenaultii",
+      "matched": "Anarhynchus leschenaultii",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Charadrius modestus",
+      "matched": "Zonibyx modestus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Charadrius wilsonia",
+      "matched": "Anarhynchus wilsonia",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Chloropicus fuscescens",
+      "matched": "Dendropicos fuscescens",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Chloropicus goertae",
+      "matched": "Dendropicos goertae",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Chloropicus griseocephalus",
+      "matched": "Dendropicos griseocephalus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Chloropicus spodocephalus",
+      "matched": "Dendropicos spodocephalus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Ciccaba albitarsis",
+      "matched": "Strix albitarsis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Ciccaba huhula",
+      "matched": "Strix huhula",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Ciccaba nigrolineata",
+      "matched": "Strix nigrolineata",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Ciccaba virgata",
+      "matched": "Strix virgata",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Cicinnurus magnificus",
+      "matched": "Diphyllodes magnificus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Cicinnurus respublica",
+      "matched": "Diphyllodes respublica",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Clytolaema rubricauda",
+      "matched": "Heliodoxa rubricauda",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Coccothraustes abeillei",
+      "matched": "Hesperiphona abeillei",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Coracina caesia",
+      "matched": "Ceblepyris caesius",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Coracina cinerea",
+      "matched": "Ceblepyris cinereus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Coracina pectoralis",
+      "matched": "Ceblepyris pectoralis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Corvus dauuricus",
+      "matched": "Coloeus dauuricus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Corvus monedula",
+      "matched": "Coloeus monedula",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Corythaixoides concolor",
+      "matched": "Crinifer concolor",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Corythaixoides leucogaster",
+      "matched": "Crinifer leucogaster",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Cracticus quoyi",
+      "matched": "Melloria quoyi",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Cranioleuca gutturata",
+      "matched": "Thripophaga gutturata",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Crateroscelis murina",
+      "matched": "Origma murina",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Crateroscelis robusta",
+      "matched": "Origma robusta",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dinopium rafflesii",
+      "matched": "Gecinulus rafflesii",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates affinis",
+      "matched": "Veniliornis affinis",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Dryobates albolarvatus",
+      "matched": "Leuconotopicus albolarvatus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates arizonae",
+      "matched": "Leuconotopicus arizonae",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates borealis",
+      "matched": "Leuconotopicus borealis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates callonotus",
+      "matched": "Veniliornis callonotus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates cassini",
+      "matched": "Veniliornis cassini",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Dryobates dignus",
+      "matched": "Veniliornis dignus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates frontalis",
+      "matched": "Veniliornis frontalis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates fumigatus",
+      "matched": "Leuconotopicus fumigatus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates kirkii",
+      "matched": "Veniliornis kirkii",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Dryobates lignarius",
+      "matched": "Veniliornis lignarius",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates maculifrons",
+      "matched": "Veniliornis maculifrons",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Dryobates mixtus",
+      "matched": "Veniliornis mixtus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Dryobates nigriceps",
+      "matched": "Veniliornis nigriceps",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates passerinus",
+      "matched": "Veniliornis passerinus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Dryobates spilogaster",
+      "matched": "Veniliornis spilogaster",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Dryobates stricklandi",
+      "matched": "Leuconotopicus stricklandi",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Dryobates villosus",
+      "matched": "Leuconotopicus villosus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Eupodotis afra",
+      "matched": "Afrotis afra",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Eupodotis afraoides",
+      "matched": "Afrotis afraoides",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Eupodotis ruficrista",
+      "matched": "Lophotis ruficrista",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Hapalocrex flaviventer",
+      "matched": "Laterallus flaviventer",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Herpsilochmus sellowi",
+      "matched": "Radinopsyche sellowi",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Hydropsalis maculicaudus",
+      "matched": "Antiurus maculicaudus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Hyliola regilla",
+      "matched": "Pseudacris regilla",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Iole indica",
+      "matched": "Acritillas indica",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Ixobrychus exilis",
+      "matched": "Botaurus exilis",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Ixobrychus involucris",
+      "matched": "Botaurus involucris",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Laterallus leucopyrrhus",
+      "matched": "Rufirallus leucopyrrhus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Laterallus xenopterus",
+      "matched": "Rufirallus xenopterus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Micropygia schomburgkii",
+      "matched": "Rufirallus schomburgkii",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Milvago chimachima",
+      "matched": "Daptrius chimachima",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Milvago chimango",
+      "matched": "Daptrius chimango",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Montifringilla blanfordi",
+      "matched": "Pyrgilauda blanfordi",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Montifringilla taczanowskii",
+      "matched": "Onychostruthus taczanowskii",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Musophaga rossae",
+      "matched": "Tauraco rossae",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Neocossyphus finschi",
+      "matched": "Stizorhina finschi",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Neocossyphus fraseri",
+      "matched": "Stizorhina fraseri",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Neopelma chrysolophum",
+      "matched": "Protopelma chrysolophum",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Nyctibius bracteatus",
+      "matched": "Phyllaemulor bracteatus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Ochthoeca diadema",
+      "matched": "Silvicultrix diadema",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Ochthoeca frontalis",
+      "matched": "Silvicultrix frontalis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Ochthoeca jelskii",
+      "matched": "Silvicultrix jelskii",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Ochthoeca pulchella",
+      "matched": "Silvicultrix pulchella",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Oressochen melanopterus",
+      "matched": "Chloephaga melanoptera",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Otocichla mupinensis",
+      "matched": "Turdus mupinensis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Periparus elegans",
+      "matched": "Pardaliparus elegans",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Periparus venustulus",
+      "matched": "Pardaliparus venustulus",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Phaeomyias murina",
+      "matched": "Nesotriccus murinus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Philydor erythrocercum",
+      "matched": "Neophilydor erythrocercum",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Phyllomyias burmeisteri",
+      "matched": "Acrochordopus burmeisteri",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Phylloscartes difficilis",
+      "matched": "Pogonotriccus difficilis",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Phylloscartes eximius",
+      "matched": "Pogonotriccus eximius",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Phylloscartes lanyoni",
+      "matched": "Pogonotriccus lanyoni",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Phylloscartes ophthalmicus",
+      "matched": "Pogonotriccus ophthalmicus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Phylloscartes paulista",
+      "matched": "Pogonotriccus paulista",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Phylloscartes poecilotis",
+      "matched": "Pogonotriccus poecilotis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Pitangus lictor",
+      "matched": "Philohydor lictor",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Porzana spiloptera",
+      "matched": "Laterallus spiloptera",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Psephotus varius",
+      "matched": "Psephotellus varius",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Psophocichla litsitsirupa",
+      "matched": "Turdus litsitsirupa",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Pycnonotus striatus",
+      "matched": "Alcurus striatus",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Rhodophoneus cruentus",
+      "matched": "Telophorus cruentus",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Sakesphorus cristatus",
+      "matched": "Sakesphoroides cristatus",
+      "source": "ebird_2026_pt_BR"
+    },
+    {
+      "model": "Sericornis citreogularis",
+      "matched": "Neosericornis citreogularis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Sericornis papuensis",
+      "matched": "Aethomyias papuensis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Spodiornis rusticus",
+      "matched": "Haplospiza rustica",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Streptopelia chinensis",
+      "matched": "Spilopelia chinensis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Streptopelia senegalensis",
+      "matched": "Spilopelia senegalensis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Sylviorthorhynchus desmursii",
+      "matched": "Sylviorthorhynchus desmurii",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Tauraco leucotis",
+      "matched": "Menelikornis leucotis",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Tauraco porphyreolophus",
+      "matched": "Gallirex porphyreolophus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Telophorus bocagei",
+      "matched": "Chlorophoneus bocagei",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Telophorus nigrifrons",
+      "matched": "Chlorophoneus nigrifrons",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Telophorus olivaceus",
+      "matched": "Chlorophoneus olivaceus",
+      "source": "aves_do_mundo_2023_2024"
+    },
+    {
+      "model": "Telophorus sulfureopectus",
+      "matched": "Chlorophoneus sulfureopectus",
+      "source": "birdnet_taxonomy_2026"
+    },
+    {
+      "model": "Vanellus cayanus",
+      "matched": "Hoploxypterus cayanus",
+      "source": "ebird_2026_pt_BR"
+    }
+  ]
+}

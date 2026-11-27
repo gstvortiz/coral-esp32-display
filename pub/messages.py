@@ -4,6 +4,17 @@ import unicodedata
 COMMAND_TOPIC = "coral/display/text"
 STATE_TOPIC = "coral/display/state"
 EVENT_TOPIC = "coral/esp32/events"
+NOTICE_TOPIC = "coral/display/notice"
+MICROPHONE_TOPIC = "coral/birds/microphone"
+
+
+def notice_message(blue, yellow='', duration_ms=4000):
+    if not isinstance(blue, str) or not isinstance(yellow, str):
+        raise ValueError('Aviso precisa conter texto.')
+    blue, yellow = display_text(blue), display_text(yellow)
+    if len(blue)>128 or len(yellow)>42 or type(duration_ms) is not int or not 1000<=duration_ms<=10000:
+        raise ValueError('Aviso fora dos limites.')
+    return dict(cmd='notice', blue=blue, yellow=yellow, duration_ms=duration_ms)
 
 
 def region_messages(blue, yellow):

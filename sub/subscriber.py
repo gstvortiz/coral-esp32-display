@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import queue
 import signal
 import threading
 import time
@@ -10,8 +11,9 @@ import uuid
 
 import paho.mqtt.client as mqtt
 from .serial_display import Display
+from pub.birds import validate_bird, serial_fields
 from pub.messages import display_text, region_messages
-from pub.messages import COMMAND_TOPIC, STATE_TOPIC, EVENT_TOPIC
+from pub.messages import COMMAND_TOPIC, STATE_TOPIC, EVENT_TOPIC, NOTICE_TOPIC, notice_message
 
 
 def parse_message(payload):
@@ -27,7 +29,7 @@ def parse_message(payload):
     request.setdefault('id', uuid.uuid4().hex)
     if not isinstance(request['id'], str) or len(request['id']) > 64:
         raise ValueError('invalid_id')
-    if request.get('cmd') not in ('text', 'regions', 'clear', 'clock'):
+    if request.get('cmd') not in ('text', 'regions', 'clear', 'clock', 'bird', 'notice'):
         raise ValueError('unknown_command')
     if request['cmd'] == 'text':
         if not isinstance(request.get('text'), str):
@@ -35,6 +37,10 @@ def parse_message(payload):
         request['text'] = display_text(request['text'])
     if request['cmd'] == 'regions':
         request.update(region_messages(request.get('blue'), request.get('yellow')))
+    if request['cmd'] == 'bird':
+        request = validate_bird(request)
+    if request['cmd'] == 'notice':
+        request.update(notice_message(request.get('blue'), request.get('yellow', ''), request.get('duration_ms',4000)))
     return request
 
 
@@ -81,6 +87,7 @@ class DesiredScreen:
 def run():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
     desired, stopping = DesiredScreen(), threading.Event()
+    notices = queue.Queue(maxsize=16)
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id='coral-display-subscriber')
     client.max_queued_messages_set(20)
     client.reconnect_delay_set(1, 15)
@@ -92,12 +99,23 @@ def run():
     def connected(c, userdata, flags, reason, properties):
         if not reason.is_failure:
             c.subscribe(COMMAND_TOPIC, qos=1)
+            c.subscribe(NOTICE_TOPIC, qos=1)
             report({'online': True, 'ok': False, 'status': 'waiting_for_message'})
             logging.info('Assinando %s', COMMAND_TOPIC)
 
     def received(c, userdata, message):
         try:
-            desired.set(parse_message(message.payload))
+            request = parse_message(message.payload)
+            if request['cmd'] in ('bird', 'notice') and message.retain:
+                logging.warning('Deteccao retida ignorada')
+                return
+            if request['cmd'] == 'notice':
+                try:
+                    notices.put_nowait((time.monotonic() + request['duration_ms']/1000, request))
+                except queue.Full:
+                    report(dict(id=request['id'], online=True, ok=False, error='notice_queue_full'))
+            else:
+                desired.set(request)
         except (ValueError, UnicodeError) as error:
             request_id = ''
             try:
@@ -126,6 +144,21 @@ def run():
                     boot_id = None
                     next_health = 0
                     while not stopping.is_set():
+                        try:
+                            notice_deadline, notice = notices.get_nowait()
+                            if time.monotonic() >= notice_deadline:
+                                report(dict(id=notice['id'], online=True, ok=False, error='notice_expired'))
+                                notice = None
+                        except queue.Empty:
+                            notice = None
+                        if notice is not None:
+                            try:
+                                result = display.request('notice', blue=notice['blue'], yellow=notice['yellow'],
+                                                         duration_ms=notice['duration_ms'])
+                                result.update(serial_id=result['id'], id=notice['id'], online=True)
+                                report(result)
+                            except (OSError, RuntimeError, ValueError) as error:
+                                report(dict(id=notice['id'], online=True, ok=False, error=str(error)))
                         revision, request = desired.get(applied_revision, timeout=0)
                         if request is None:
                             applied_revision = revision
@@ -143,7 +176,9 @@ def run():
                                 boot_id = status.get('boot_id')
                                 next_health = time.monotonic() + 5
                             continue
-                        if request['cmd'] == 'text':
+                        if request['cmd'] == 'bird':
+                            result = display.request('bird', **serial_fields(request))
+                        elif request['cmd'] == 'text':
                             result = display.show(request['text'], remember=False)
                         elif request['cmd'] == 'regions':
                             result = display.show_regions(request['blue'], request['yellow'], remember=False)

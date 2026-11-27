@@ -1,0 +1,23 @@
+[Unit]
+Description=BirdNET microphone classification and ESP32 bird display
+Wants=coral-display-subscriber.service
+After=coral-display-subscriber.service sound.target alsa-restore.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=mendel
+Group=mendel
+SupplementaryGroups=audio
+WorkingDirectory=/home/mendel/coral-esp32-display
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=PYTHONUNBUFFERED=1
+ExecStartPre=/bin/bash /home/mendel/coral-esp32-display/sub/services/configure-microphone.sh
+ExecStart=/usr/bin/python3 -m sub.birds --config /home/mendel/coral-esp32-display/sub/services/birds.json
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

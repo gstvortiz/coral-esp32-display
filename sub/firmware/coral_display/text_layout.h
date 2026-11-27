@@ -4,6 +4,9 @@
 #include <string.h>
 
 constexpr int BLUE_TOP = 0, BLUE_HEIGHT = 48;
+constexpr int BIRD_NAME_HEIGHT = 32, BIRD_CONFIDENCE_HEIGHT = 16;
+constexpr int BIRD_CONFIDENCE_TOP = BLUE_TOP + BIRD_NAME_HEIGHT;
+static_assert(BIRD_NAME_HEIGHT + BIRD_CONFIDENCE_HEIGHT == BLUE_HEIGHT, "Bird layout must fit blue region");
 constexpr int YELLOW_TOP = 48, YELLOW_HEIGHT = 16;
 
 struct TextPage {

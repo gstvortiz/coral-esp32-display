@@ -11,7 +11,7 @@ def main():
     events = []
     with Display(on_event=events.append) as display:
         initial = display.status()
-        assert initial['firmware'] == 'coral-display/1.3', initial
+        assert initial['firmware'] == 'coral-display/1.4', initial
         assert initial['service_task'] == 'coral-display' and initial['boot_id'], initial
         boot_id = initial['boot_id']
         assert initial['oled'] and initial['address'] in (60, 61), initial
@@ -69,14 +69,14 @@ def main():
         assert clock['mode'] == 'clock' and 'rtc_time' in clock, clock
         checks.append('limpar tela e consultar RTC')
         deadline = time.monotonic() + 12
-        while not any(e.get('event') == 'application_tick' for e in events) and time.monotonic() < deadline:
+        while not any(e.get('event') == 'bird_record' for e in events) and time.monotonic() < deadline:
             display.poll_events()
-        ticks = [e for e in events if e.get('event') == 'application_tick']
-        assert ticks and ticks[0]['data']['task'] == 'loopTask', events
+        ticks = [e for e in events if e.get('event') == 'bird_record']
+        assert ticks and 'saved' in ticks[0]['data'], events
         assert all(e['boot_id'] == boot_id for e in ticks), ticks
         state = display.status()
         assert state['stack_free_min'] > 1024 and state['boot_id'] == boot_id, state
-        checks.append('eventos do loop paralelo, ACKs e pilha da tarefa')
+        checks.append('eventos do registro paralelo, ACKs e pilha da tarefa')
         assert display.show_regions('Coral', 'Pronta')['mode'] == 'regions'
     with Display() as display:
         state = display.status()

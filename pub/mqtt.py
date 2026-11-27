@@ -9,7 +9,7 @@ import uuid
 
 import paho.mqtt.client as mqtt
 
-from .messages import COMMAND_TOPIC, STATE_TOPIC, display_text, region_messages
+from .messages import COMMAND_TOPIC, STATE_TOPIC, NOTICE_TOPIC, display_text, region_messages
 
 
 def exchange(command=None, host=None, port=1883, timeout=15):
@@ -48,7 +48,9 @@ def exchange(command=None, host=None, port=1883, timeout=15):
         if errors:
             raise RuntimeError(errors[0])
         if request is not None:
-            info = client.publish(COMMAND_TOPIC, json.dumps(request, ensure_ascii=False), qos=1, retain=True)
+            topic = NOTICE_TOPIC if request.get('cmd') == 'notice' else COMMAND_TOPIC
+            info = client.publish(topic, json.dumps(request, ensure_ascii=False), qos=1,
+                                  retain=request.get('cmd') not in ('bird', 'notice'))
             info.wait_for_publish(timeout)
             if not info.is_published():
                 raise TimeoutError('Broker MQTT nao confirmou a publicacao.')

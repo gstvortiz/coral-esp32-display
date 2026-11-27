@@ -1,4 +1,7 @@
 #include "display_service.h"
+#include "bird_monitor.h"
+#include "bird_config.h"
+#include "button.h"
 #include <esp_system.h>
 #include <atomic>
 #include <Arduino.h>
@@ -18,6 +21,14 @@ std::atomic<uint32_t> rejected(0);
 char bootId[17];
 uint32_t eventSequence = 0;
 bool localRequest = false;
+bool birdMode = false;
+String birdConfidence;
+DebouncedButton micButton;
+String noticeBlue,noticeYellow;
+uint32_t noticeUntil=0;
+bool noticeVisible=false;
+bool hasNotice() {return noticeVisible && int32_t(noticeUntil-millis())>0;}
+unsigned long lastBirdDraw = 0, lastRegionPage = 0;
 enum class Kind : uint8_t { Command, Event };
 struct Message { Kind kind; char json[2305]; };
 
@@ -129,7 +140,10 @@ void draw() {
   oled.setTextWrap(false);
   oled.setTextSize(1);
   oled.setCursor(0, 0);
-  if (mode == "clock") {
+  if (hasNotice()) {
+    drawText(noticeBlue,0,BLUE_TOP,BLUE_HEIGHT);
+    drawText(noticeYellow,0,YELLOW_TOP,YELLOW_HEIGHT);
+  } else if (mode == "clock") {
     char date[16], clock[12]; float temperature;
     if (rtcInfo(date, clock, temperature)) {
       drawText(String(date) + "\n" + clock, 0, BLUE_TOP, BLUE_HEIGHT);
@@ -140,7 +154,10 @@ void draw() {
   } else if (mode == "text") {
     nextPage = drawText(text, pageStart, BLUE_TOP, BLUE_HEIGHT);
   } else if (mode == "regions") {
-    blueCursor.next = drawText(blue[blueCursor.index], blueCursor.start, BLUE_TOP, BLUE_HEIGHT);
+    const bool showConfidence = birdMode && birdConfidence.length();
+    blueCursor.next = drawText(blue[blueCursor.index], blueCursor.start, BLUE_TOP,
+                               showConfidence ? BIRD_NAME_HEIGHT : BLUE_HEIGHT);
+    if (showConfidence) drawText(birdConfidence, 0, BIRD_CONFIDENCE_TOP, BIRD_CONFIDENCE_HEIGHT);
     yellowCursor.next = drawText(yellow[yellowCursor.index], yellowCursor.start, YELLOW_TOP, YELLOW_HEIGHT);
   }
   oled.display();
@@ -159,11 +176,19 @@ void respond(const char *id, bool ok, const char *error = nullptr) {
   out["id"] = id;
   out["ok"] = ok;
   out["type"] = "ack";
-  out["firmware"] = "coral-display/1.3";
+  out["firmware"] = "coral-display/1.7";
+  JsonObject overlay=out.createNestedObject("overlay");
+  overlay["active"]=hasNotice();
+  overlay["blue"]=hasNotice() ? noticeBlue : "";
+  overlay["yellow"]=hasNotice() ? noticeYellow : "";
+  overlay["remaining_ms"]=hasNotice() ? noticeUntil-millis() : 0;
+  out["mic_button_gpio"]=BirdConfig::MIC_BUTTON;
+  out["mic_button_pressed"]=digitalRead(BirdConfig::MIC_BUTTON)==LOW;
   out["boot_id"] = bootId;
   out["service_task"] = pcTaskGetName(nullptr);
   out["stack_free_min"] = uxTaskGetStackHighWaterMark(nullptr);
   out["queue_rejected"] = rejected.load();
+  BirdMonitor::status(out.createNestedObject("bird"));
   out["alignment"] = "center";
   out["rotation"] = 180;
   out["oled"] = displayReady && probe(address);
@@ -171,6 +196,7 @@ void respond(const char *id, bool ok, const char *error = nullptr) {
   out["mode"] = mode;
   out["text"] = text;
   out["page_offset"] = pageStart;
+  out["bird_confidence"] = birdMode ? birdConfidence : "";
   out["blue_height"] = BLUE_HEIGHT;
   out["yellow_height"] = YELLOW_HEIGHT;
   if (mode == "regions") {
@@ -202,6 +228,46 @@ void handle() {
   const char *cmd = doc["cmd"] | "";
   if (strlen(id) > 64) { respond("", false, "id_too_long"); return; }
   if (!strcmp(cmd, "status")) { respond(id, true); return; }
+  if (!strcmp(cmd,"notice")) {
+    const char *b=doc["blue"] | "", *y=doc["yellow"] | "";
+    unsigned duration=doc["duration_ms"] | 0U;
+    if(!doc["blue"].is<const char*>() || !doc["yellow"].is<const char*>() ||
+       !validText(b) || !validText(y) || strlen(b)>128 || strlen(y)>42 ||
+       duration<1000 || duration>10000) {respond(id,false,"invalid_notice");return;}
+    noticeBlue=b;noticeYellow=y;noticeUntil=millis()+duration;noticeVisible=true;
+    draw();respond(id,true);return;
+  }
+  if (!strcmp(cmd, "bird")) {
+    const char *name=doc["name"] | "", *scientific=doc["scientific_name"] | "";
+    double score=doc["score"] | -1.0;
+    unsigned ttl=doc["ttl_ms"] | 0U;
+    uint64_t epoch=doc["epoch_ms"] | uint64_t(0);
+    uint64_t windowStart=doc["window_start_ms"] | uint64_t(0), windowEnd=doc["window_end_ms"] | uint64_t(0);
+    if ((doc.containsKey("window_start_ms") || doc.containsKey("window_end_ms")) &&
+        (!doc["window_start_ms"].is<uint64_t>() || !doc["window_end_ms"].is<uint64_t>() ||
+         !windowStart || windowEnd<=windowStart || windowEnd>epoch || windowEnd-windowStart>10000)) {
+      respond(id,false,"invalid_audio_window");return;
+    }
+    if (!doc["active"].is<bool>() || !validText(name) || !validText(scientific) ||
+        strlen(name)>128 || strlen(scientific)>128 || !isfinite(score) || score<0 || score>1 ||
+        ttl<1 || ttl>30000 || epoch<1577836800000ULL || epoch>4102444800000ULL ||
+        (doc["active"].as<bool>() && !*name)) {
+      respond(id,false,"invalid_bird");return;
+    }
+    BirdMonitor::detection(name,scientific,score,doc["active"],epoch,ttl,windowStart,windowEnd);
+    birdConfidence = doc["active"].as<bool>() ? String(int(score * 100.0 + 0.5)) + "%" : "";
+    String label=doc["active"].as<bool>() ? name : "Ouvindo...";
+    if(!birdMode || blueCount!=1 || blue[0]!=label) {
+      blue[0]=label;blueCursor=RegionCursor();lastRegionPage=millis();
+    }
+    char direction[24];bool active;
+    BirdMonitor::view(direction,sizeof(direction),active);
+    if(!birdMode || yellowCount!=1 || yellow[0]!=direction) {
+      yellow[0]=direction;yellowCursor=RegionCursor();
+    }
+    birdMode=true;mode="regions";text="";blueCount=yellowCount=1;
+    draw();respond(id,true);return;
+  }
   if (!strcmp(cmd, "text")) {
     if (!doc["text"].is<const char *>()) { respond(id, false, "text_required"); return; }
     String value = doc["text"].as<String>();
@@ -222,6 +288,7 @@ void handle() {
     if (!displayReady || !probe(address)) { respond(id, false, "oled_unavailable"); return; }
     mode = !strcmp(cmd, "clear") ? "clear" : "clock";
   } else { respond(id, false, "unknown_command"); return; }
+  birdMode=false;BirdMonitor::cancel();
   // Persist only when requested and changed. Streaming clients can disable this.
   if (doc["remember"] | true) {
     bool saved = true;
@@ -243,6 +310,7 @@ void handle() {
     }
     if (!saved) { respond(id, false, "storage_error"); return; }
   }
+  lastRegionPage=millis();
   pageStart = nextPage = 0;
   blueCursor = RegionCursor(); yellowCursor = RegionCursor();
   draw();
@@ -251,6 +319,8 @@ void handle() {
 
 void initialize() {
   I2cGuard guard;
+  pinMode(BirdConfig::MIC_BUTTON,INPUT_PULLUP);
+  micButton.begin(digitalRead(BirdConfig::MIC_BUTTON)==LOW,millis());
   snprintf(bootId, sizeof(bootId), "%08lx%08lx", (unsigned long)esp_random(), (unsigned long)esp_random());
   // Hold a complete incoming command while an event or I2C transfer is sent.
   Serial.setRxBufferSize(4096);
@@ -277,6 +347,15 @@ void initialize() {
 }
 
 void tick() {
+  if(micButton.update(digitalRead(BirdConfig::MIC_BUTTON)==LOW,millis())) {
+    noticeBlue="Microfone";noticeYellow="Trocando...";
+    noticeUntil=millis()+4000;noticeVisible=true;draw();
+    StaticJsonDocument<256> event;
+    event["event"]="microphone_next";event["task_id"]="button";
+    event.createNestedObject("data")["gpio"]=BirdConfig::MIC_BUTTON;
+    emitEvent(event);
+  }
+  if(noticeVisible && !hasNotice()) {noticeVisible=false;draw();}
   // Bound serial work so a continuous sender cannot starve pagination or the queue.
   for (int bytes = 0; bytes < 512 && Serial.available(); ++bytes) {
     char c = Serial.read();
@@ -289,11 +368,22 @@ void tick() {
       else input += c;
     }
   }
+  if (birdMode && millis()-lastBirdDraw>=200) {
+    lastBirdDraw=millis();char direction[24];bool active;
+    BirdMonitor::view(direction,sizeof(direction),active);
+    bool changed=yellow[0]!=direction;
+    if(changed) {yellow[0]=direction;yellowCursor=RegionCursor();}
+    if(!active && (blue[0]!="Ouvindo..." || birdConfidence.length())) {
+      blue[0]="Ouvindo...";birdConfidence="";blueCursor=RegionCursor();changed=true;
+    }
+    if(changed) draw();
+  }
   if (mode == "clock" && millis() - lastDraw >= 1000) draw();
   if (mode == "text" && (nextPage || pageStart) && millis() - lastDraw >= 3000) {
     pageStart = nextPage; draw();
   }
-  if (mode == "regions" && millis() - lastDraw >= 3000) {
+  if (mode == "regions" && millis() - lastRegionPage >= 3000) {
+    lastRegionPage=millis();
     bool changed = blueCursor.advance(blueCount);
     changed |= yellowCursor.advance(yellowCount);
     if (changed) draw();
@@ -366,7 +456,7 @@ bool postRegions(const char *blueText, const char *yellowText, const char *reque
 
 bool postEvent(const char *name, const char *dataJson, const char *taskId, TickType_t wait) {
   if (!name || !*name || strlen(name) > 64 || !taskId || strlen(taskId) > 64 ||
-      !dataJson || strlen(dataJson) > 768) { ++rejected; return false; }
+      !dataJson || strlen(dataJson) > 1536) { ++rejected; return false; }
   DynamicJsonDocument doc(4096);
   if (deserializeJson(doc, dataJson) || !doc.is<JsonObject>()) { ++rejected; return false; }
   DynamicJsonDocument event(4096);

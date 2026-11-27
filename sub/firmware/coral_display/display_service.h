@@ -15,7 +15,7 @@ bool begin();
 // ASCII display text, 1024 characters total. Empty string clears that region.
 bool postRegions(const char *blue, const char *yellow, const char *requestId = "local",
                  TickType_t wait = 0);
-// Event name / taskId <= 64 bytes, JSON object data <= 768 bytes. UTF-8 permitted.
+// Event name / taskId <= 64 bytes, JSON object data <= 1536 bytes. UTF-8 permitted.
 bool postEvent(const char *name, const char *dataJson = "{}", const char *taskId = "",
                TickType_t wait = 0);
 

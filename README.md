@@ -8,6 +8,18 @@ e amarela embaixo (128 × 16), com mensagens centralizadas em cada área.
 pub/ (PC ou Coral) → broker MQTT na Coral → sub/ (Coral) → USB → firmware (ESP32) → OLED
 ```
 
+## Pássaros, direção e registro (1.5)
+
+A Coral captura o microfone USB da webcam C920 e executa o BirdNET já instalado pelo projeto
+`Documentos/Coral`. Acima do limiar configurável (atualmente 0,15), envia o nome
+para a área azul e habilita a direção na faixa amarela/laranja. A ESP calcula RMS dos
+quatro microfones na mesma janela de 3 segundos classificada, mantém nome e direção
+juntos até o próximo resultado e salva **somente metadados** no
+microSD a cada aproximadamente 0,5 segundo. Sem detecção válida, mostra `Ouvindo...`.
+O buzzer está **desativado por solicitação do usuário**.
+
+Veja [instalação, calibração, formato dos registros e testes](BIRDS.md).
+
 ## Organização
 
 ```text
@@ -64,8 +76,8 @@ Veja [pub/README.md](pub/README.md) para APIs Python e MQTT direto.
 
 Desde a versão 1.3, `display_service.cpp/.h` mantém uma tarefa FreeRTOS dedicada à
 serial, ao OLED e ao RTC. O `coral_display.ino` fica livre para a aplicação: o exemplo
-atual espera 10 segundos e publica `application_tick`, enquanto o display continua
-recebendo comandos e alternando páginas. Substitua esse exemplo pelas suas funções.
+da versão 1.4 inicializa também as tarefas de RMS e armazenamento. O `loop()` permanece
+livre para outras funções. As tarefas trocam dados por mutex e filas limitadas.
 
 ```mermaid
 flowchart TD
@@ -118,7 +130,8 @@ firmware, usar a fila e compartilhar o I²C, e [pub/README.md](pub/README.md) pa
   texto simples usa somente a área azul. As cores são físicas, não selecionáveis por pixel.
 - Até 1024 caracteres no total das duas áreas, após transliteração: `ação` aparece como `acao`; símbolos não
   disponíveis na fonte viram `?`.
-- Última mensagem retida no broker e reaplicada após reconexão ou reset do ESP32.
+- Mensagens manuais ficam retidas no broker. Detecções de pássaros não ficam retidas
+  e expiram mesmo se a Coral parar; uma reconexão não renova o prazo.
 - Pedidos locais pela fila podem alterar a tela até o próximo comando MQTT ou reconexão;
   a verificação periódica da Coral não desfaz uma alteração local no mesmo boot.
 - Serial permanece aberta; atualizações do assinante não são gravadas na flash do ESP32.
@@ -131,9 +144,9 @@ ESP32 DevKit com flash de 4 MB, USB CP2102, OLED SSD1306 128 × 64 I²C, SDA no 
 SCL no GPIO22. OLED em `0x3C` ou `0x3D`; modo relógio com DS3231 em `0x68` no mesmo
 barramento. OLED e RTC usam 3,3 V e terra comum.
 
-Este é um **firmware novo**, dedicado às mensagens no OLED e à leitura do RTC. Não foi
-baseado no firmware anteriormente instalado na placa e não implementa aquisição de áudio,
-cartão SD, buzzer ou LED RGB. O backup da flash antiga fica fora deste repositório.
+Este é um **firmware novo**, não baseado no firmware anteriormente instalado na placa.
+A versão 1.4 acrescenta aquisição via MCP3008, RMS, microSD e buzzer; o RGB não é usado.
+O backup da flash antiga fica fora deste repositório.
 
 ## Desenvolvimento e validação
 
@@ -153,6 +166,40 @@ visualmente. A organização em `pub/` e `sub/` também foi testada no hardware 
 Não estão incluídos binários, backups da flash, dados MQTT persistidos, credenciais,
 ambientes Python ou ferramentas de terceiros.
 
+### Validação da versão 1.5 — 11/11/2026
+
+- 25 testes Python passaram no PC e na Coral; RMS e histórico temporal C++ passaram
+  com AddressSanitizer e UndefinedBehaviorSanitizer.
+- O teste de histórico confirma Sul na janela antiga e Norte na seguinte, incluindo
+  empate, sobreposição parcial, histórico ausente/sobrescrito e atraso de entrega.
+- Firmware compilado e gravado com verificação de hash. No hardware, uma janela de
+  3 segundos teve cobertura de 99,3%; direção e RMS históricos ficaram fixos entre
+  observações e em retentativas. Os sete registros desse teste foram salvos.
+- Teste de comunicação simultânea passou: 23 comandos longos e 24 eventos em
+  12 segundos; menor folga de pilha: 8112 bytes.
+- O teste amplo `check_birds_hardware` parou na verificação de gravação: o microSD
+  continua apresentando falhas intermitentes (`saved:false`), também observadas antes
+  desta versão. Não se considera a persistência confiável até resolver essa falha.
+- Captura ao vivo pela C920 retomada, limiar 0,5, cadência de 3 segundos, registro
+  de estado a cada 0,5 segundo e buzzer desativado. Não houve publicação no GitHub.
+
+### Validação da versão 1.4 — 11/11/2026
+
+- 23 testes Python passaram no PC e na Coral; teste de RMS C++ com sanitizadores passou.
+- Firmware compilado e gravado com verificação de hash; buzzer desativado.
+- Teste físico confirmou CH0–CH3, escrita e releitura no microSD, expiração da
+  detecção sem comando adicional, controle manual e paginação com atualizações repetidas.
+- Teste de comunicação simultânea: 25 comandos longos e 2 eventos em 12 segundos,
+  sem reset; menor folga de pilha observada: 8160 bytes.
+- As 12 verificações de compatibilidade do display passaram.
+- Microfone embutido da Coral capturado e processado pelo BirdNET; áudio de referência
+  de bem-te-vi identificado com score 0,961. Isso não mede acurácia na sala.
+- Serviço automático ativo e eventos reais do microSD recebidos por MQTT; após o ajuste
+  de inicialização do cartão, os registros observados foram confirmados sem perdas.
+- Boot real validado: broker, ponte e classificador retornaram sozinhos; a captura
+  se recuperou de sinal constante na primeira retentativa, antes do login por SSH.
+- Direções físicas e ganhos dos microfones ainda precisam de calibração na montagem.
+
 ### Validação da versão 1.3 — 11/11/2026
 
 - 19 testes Python passaram no PC e na Coral; teste de layout C++ passou com sanitizadores.
@@ -163,7 +210,7 @@ ambientes Python ou ferramentas de terceiros.
   evento espontâneo, sem reset; menor folga de pilha observada nesse teste: 8032 bytes.
 - `python3 -m pub.pc --events --count 2 --timeout 30` recebeu eventos do `loopTask`
   pelo MQTT enquanto uma publicação de tela foi confirmada pela tarefa `coral-display`.
-- A versão normal está instalada; o sketch temporário de teste não fica rodando.
+- Na validação da 1.3, o sketch temporário foi substituído pela versão normal.
 
 ### Validação da versão 1.2 — 10/11/2026
 
@@ -182,3 +229,9 @@ aparência final exigem confirmação visual no módulo utilizado.
 
 Os arquivos systemd fornecidos são modelos para instalação; ajuste caminhos e o
 executável do broker ao ambiente de destino.
+
+## Microfone e nomes das aves
+
+No firmware 1.6, o botão GPIO32 alterna as entradas de áudio disponíveis na Coral.
+A seleção aparece no OLED por 4 segundos. Veja [uso e pinagem](BIRDS.md#botão-para-escolher-o-microfone-firmware-16)
+e o [catálogo de nomes populares offline](sub/data/README.md).
