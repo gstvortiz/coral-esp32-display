@@ -85,6 +85,37 @@ instalado nela. O backup original da placa de desenvolvimento não é distribuí
 - USB serial 115200 baud, 8N1, JSON por linha, até 2304 bytes por comando recebido.
 - O assinante usa `remember=False`; persistência no broker, sem gravar cada texto na flash.
 
+## Repetição da tela por LoRa
+
+Um Ebyte E32-433T20D na UART2 repete pelo rádio o que aparece no OLED, para um receptor
+distante (outro E32 num conversor USB-serial). Nada muda no protocolo JSON, na tela ou nos
+eventos; se o rádio não iniciar, o display continua funcionando. O código está em
+`lora_link.h/.cpp`, e `draw()` entrega cada tela nova ao rádio.
+
+| E32 | ESP32 |
+|---|---|
+| TXD | GPIO35 (RX da UART2) |
+| RXD | GPIO2 (TX da UART2) |
+| AUX | GPIO34 |
+| M0 e M1, juntos | GPIO5 (LOW = modo transparente) |
+| VCC / GND | 5 V / GND |
+
+- Os dois E32 ficam na configuração de fábrica: UART 9600 8N1, canal 0x17 (433 MHz),
+  2,4 kbps no ar. No receptor, leia a porta COM a 9600 baud.
+- Cada pacote é uma linha `#<n> <região>: <texto>`, com `n` crescente desde o boot.
+  Pela sequência dá para contar pacotes perdidos.
+
+```text
+#57 azul: Bem-te-vi 92%
+#58 amarelo: Oeste
+```
+
+- Tela nova sai em até 1 s; a atual se repete a cada 5 s. Outros casos: `texto: ...`,
+  `(relogio na tela)` e `(tela vazia)`. Linhas longas são cortadas em pedaços de 45
+  caracteres, no máximo 12 por tela.
+- GPIO2 é pino de boot. Se a gravação pela USB falhar com "Failed to connect", segure
+  o botão BOOT ou desconecte o E32 durante a gravação.
+
 ## Manutenção e teste real
 
 ```sh
