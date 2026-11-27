@@ -11,6 +11,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include "text_layout.h"
+#include "lora_link.h"
 
 namespace {
 QueueHandle_t inbox = nullptr;
@@ -131,7 +132,34 @@ bool rtcInfo(char *date, char *clock, float &temperature) {
   return true;
 }
 
+// Hands what the OLED shows to the LoRa link: one line per message, region first.
+// Only copies text under the link's mutex; the radio task does the slow sending.
+void forwardScreen() {
+  String lines;
+  auto add = [&lines](const char *label, String value) {
+    value.replace("\n", " / ");
+    lines += label; lines += value; lines += '\n';
+  };
+  if (hasNotice()) {
+    if (noticeBlue.length()) add("azul: ", noticeBlue);
+    if (noticeYellow.length()) add("amarelo: ", noticeYellow);
+  } else if (mode == "regions") {
+    const bool showConfidence = birdMode && birdConfidence.length();
+    for (uint8_t i = 0; i < blueCount; ++i) {
+      if (!blue[i].length()) continue;
+      add("azul: ", showConfidence && i == 0 ? blue[i] + " " + birdConfidence : blue[i]);
+    }
+    for (uint8_t i = 0; i < yellowCount; ++i) if (yellow[i].length()) add("amarelo: ", yellow[i]);
+  } else if (mode == "text" && text.length()) {
+    add("texto: ", text);
+  } else if (mode == "clock") {
+    lines = "(relogio na tela)";
+  }
+  LoraLink::setScreen(lines.c_str());
+}
+
 void draw() {
+  forwardScreen();
   I2cGuard guard;
   lastDraw = millis();
   if (!displayReady) return;
